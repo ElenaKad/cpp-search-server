@@ -1,4 +1,9 @@
 #pragma once
+
+#include "document.h"
+#include "string_processing.h"
+#include "log_duration.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -6,9 +11,6 @@
 #include <algorithm>
 #include <stdexcept>
 #include <cmath>
-
-#include "document.h"
-#include "string_processing.h"
 
 using namespace std::string_literals;
 
@@ -35,9 +37,14 @@ public:
 
     int GetDocumentCount() const;
 
-    int GetDocumentId(int index) const;
+    const std::set<int>::const_iterator begin() const noexcept;
+    const std::set<int>::const_iterator end() const noexcept;
 
     std::tuple<std::vector<std::string>, DocumentStatus> MatchDocument(const std::string& raw_query, int document_id) const;
+
+    const std::map<std::string, double>& GetWordFrequencies(int document_id) const;
+
+    void RemoveDocument(int document_id);
 
 private:
     struct DocumentData {
@@ -47,8 +54,9 @@ private:
 
     const std::set<std::string> stop_words_;
     std::map<std::string, std::map<int, double>> word_to_document_freqs_;
+    std::map<int, std::map<std::string, double>> document_to_word_freqs_;
     std::map<int, DocumentData> documents_;
-    std::vector<int> document_ids_;
+    std::set<int> document_ids_;
 
     bool IsStopWord(const std::string& word) const;
 
@@ -94,12 +102,12 @@ std::vector<Document> SearchServer::FindTopDocuments(const std::string& raw_quer
     sort(matched_documents.begin(), matched_documents.end(),
         [](const Document& lhs, const Document& rhs) {
             const double EPSILON = 1e-6;
-    if (std::abs(lhs.relevance - rhs.relevance) < EPSILON) {
-        return lhs.rating > rhs.rating;
-    }
-    else {
-        return lhs.relevance > rhs.relevance;
-    }
+            if (std::abs(lhs.relevance - rhs.relevance) < EPSILON) {
+                return lhs.rating > rhs.rating;
+            }
+            else {
+                return lhs.relevance > rhs.relevance;
+            }
         });
     if (matched_documents.size() > MAX_RESULT_DOCUMENT_COUNT) {
         matched_documents.resize(MAX_RESULT_DOCUMENT_COUNT);
@@ -138,9 +146,3 @@ std::vector<Document> SearchServer::FindAllDocuments(const Query& query, Documen
     }
     return matched_documents;
 }
-
-void AddDocument(SearchServer& search_server, int document_id, const std::string& document, DocumentStatus status, const std::vector<int>& ratings);
-
-void FindTopDocuments(const SearchServer& search_server, const std::string& raw_query);
-
-void MatchDocuments(const SearchServer& search_server, const std::string& query);

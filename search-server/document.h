@@ -1,4 +1,5 @@
 #pragma once
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -23,7 +24,3 @@ enum class DocumentStatus {
 };
 
 std::ostream& operator<<(std::ostream& out, const Document& document);
-
-void PrintDocument(const Document& document);
-
-void PrintMatchDocumentResult(int document_id, const std::vector<std::string>& words, DocumentStatus status);
